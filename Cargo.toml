@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Agent skills manager: fetch marketplaces, install plugins, and toggle skills into agent skill directories"
 license = "MIT"
-repository = "https://github.com/kkiyama117/agents_skills_manager"
+repository = "https://github.com/kkiyama117/askm"
 
 [dependencies]
 anyhow = "1.0.104"

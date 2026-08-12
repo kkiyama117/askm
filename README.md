@@ -14,6 +14,39 @@ It follows the [Agent Skills](https://agentskills.io) and
 
 For the reasoning behind these choices, see [docs/why.md](docs/why.md).
 
+## Install
+
+```
+cargo install --git https://github.com/kkiyama117/askm
+```
+
+From a clone, `cargo install --path .` does the same; both land the binary in
+`~/.cargo/bin`. To build without installing, `cargo build --release` leaves it
+at `target/release/askm`.
+
+Requirements are a Rust toolchain and `git` on `PATH` — `git` is a *runtime*
+dependency, not only a build one, since syncing a marketplace shells out to it.
+Linux and macOS only: skills are projected with Unix symlinks, and the link
+module fails to compile on other platforms rather than misbehave quietly.
+
+Installing the binary sets nothing else up. `askm` creates a store directory
+only when a command actually needs to write one, so `askm status` on an
+untouched machine reports an empty result and leaves the filesystem alone.
+
+### First run
+
+```
+askm marketplace add https://github.com/<owner>/<repo>  # a local path works too
+askm search review                                      # fuzzy, across every marketplace
+askm install <plugin>@<marketplace>
+askm enable <skill> --project                           # -> ./.agents/skills/<skill>
+askm status                                             # what's enabled, and where
+```
+
+`marketplace add` autodetects its argument: an existing directory is registered
+as a local source and symlinked in place rather than copied, so a plugin you're
+developing stays editable at its original location.
+
 ## Store layout
 
 Everything `askm` owns lives under XDG base directories (or a single root via
