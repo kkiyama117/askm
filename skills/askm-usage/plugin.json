@@ -1,0 +1,6 @@
+{
+  "name": "askm-usage",
+  "version": "1.0.0",
+  "description": "Skills that teach agents how to use askm, the agent skills manager.",
+  "keywords": ["askm", "skills", "plugins", "marketplace"]
+}
