@@ -1,16 +1,18 @@
 # askm — agent skills manager
 
-`askm` is `systemctl enable` for [Agent Skills](https://agent-plugins.org):
+`askm` is `systemctl enable` for [Agent Skills](https://agentskills.io):
 one local store of installed skill plugins, projected by symlink into
 whichever agent's skills directory you point it at (`.agents`, `.claude`,
 `.codex`, `.gemini`, `.cursor`, `.opencode`). Install a plugin once, then
 enable individual skills — or a whole plugin's worth — into one agent or
 several, per project or for your user account, without duplicating files.
 
-It follows the [Agent Skills](https://agent-plugins.org) and
+It follows the [Agent Skills](https://agentskills.io) and
 [Agent Plugins 1.0](https://agent-plugins.org) specs: `plugin.json` manifests,
 `SKILL.md` frontmatter, and `marketplace.json` listings in either the
 `.agents/plugins/` or `.claude-plugin/` dialect.
+
+For the reasoning behind these choices, see [docs/why.md](docs/why.md).
 
 ## Store layout
 
