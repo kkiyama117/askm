@@ -42,6 +42,7 @@ fn enable_symlink(
             scope,
             mode: LinkMode::Symlink,
             force: false,
+            source: None,
         },
     )
     .unwrap()

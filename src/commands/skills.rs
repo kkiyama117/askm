@@ -1,5 +1,6 @@
 //! `askm enable|disable|status|doctor`.
 
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context as _, Result};
@@ -17,6 +18,7 @@ use crate::commands::table;
 pub struct EnableArgs {
     pub spec: String,
     pub all: bool,
+    pub path: Option<PathBuf>,
     pub targets: Option<Vec<String>>,
     pub user: bool,
     pub project: bool,
@@ -32,12 +34,63 @@ pub fn enable_cmd(ctx: &mut Context, args: EnableArgs) -> Result<()> {
     } else {
         LinkMode::Symlink
     };
-    let plan = resolve_plan(ctx, &args)?;
+    if args.spec.is_empty() && args.path.is_none() {
+        bail!(
+            "enable needs a skill name, or --path <dir> (with --all to enable every skill in it)"
+        );
+    }
+    let plan = match &args.path {
+        Some(dir) => resolve_path_plan(dir, &args)?,
+        None => resolve_plan(ctx, &args)?,
+    };
 
     for (skill, id) in &plan {
         enable_one(ctx, skill, id, &targets, &scope, mode, args.force)?;
     }
     Ok(())
+}
+
+/// Resolve the plan for `--path <dir>`: every immediate child of `<dir>` that
+/// contains a `SKILL.md` (or just `<dir>/<skill>` when `--all` is not given).
+/// Each skill is recorded as plugin `path@<dir>` so `disable` can prove
+/// ownership of the links it creates.
+fn resolve_path_plan(dir: &Path, args: &EnableArgs) -> Result<Vec<(String, PluginId)>> {
+    let canonical = dir
+        .canonicalize()
+        .with_context(|| format!("resolving {}", dir.display()))?;
+    if !canonical.is_dir() {
+        bail!("{:?} is not a directory", dir.display());
+    }
+    let id = PluginId::new("path", canonical.to_string_lossy());
+    let skills = if args.all {
+        let mut names = Vec::new();
+        for entry in
+            fs::read_dir(&canonical).with_context(|| format!("reading {}", canonical.display()))?
+        {
+            let entry = entry.context("reading skills directory entry")?;
+            let path = entry.path();
+            if path.is_dir() && path.join("SKILL.md").is_file() {
+                names.push(entry.file_name().to_string_lossy().into_owned());
+            }
+        }
+        names.sort();
+        names
+    } else {
+        let skill_dir = canonical.join(&args.spec);
+        if !skill_dir.is_dir() || !skill_dir.join("SKILL.md").is_file() {
+            bail!(
+                "{:?} has no skill named {:?} (expected {})",
+                dir.display(),
+                args.spec,
+                skill_dir.display()
+            );
+        }
+        vec![args.spec.clone()]
+    };
+    if skills.is_empty() {
+        bail!("no skills found under {:?}", dir.display());
+    }
+    Ok(skills.into_iter().map(|s| (s, id.clone())).collect())
 }
 
 /// The skills to enable and which installed plugin each comes from: either
@@ -124,8 +177,14 @@ fn enable_one(
     mode: LinkMode,
     force: bool,
 ) -> Result<()> {
-    let effective_root = effective_root_for(ctx, id)?;
+    let path_mode = id.plugin == "path";
+    let effective_root = if path_mode {
+        PathBuf::from(&id.marketplace)
+    } else {
+        effective_root_for(ctx, id)?
+    };
     for target in targets {
+        let source = path_mode.then(|| effective_root.join(skill));
         let outcome = link::enable(
             &ctx.state,
             link::EnableRequest {
@@ -136,6 +195,7 @@ fn enable_one(
                 scope,
                 mode,
                 force,
+                source: source.as_deref(),
             },
         )
         .with_context(|| {

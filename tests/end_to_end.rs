@@ -120,6 +120,7 @@ fn a_local_plugins_skill_can_be_enabled_and_then_disabled() {
             scope: &fx.scope(),
             mode: LinkMode::Symlink,
             force: false,
+            source: None,
         },
     )
     .unwrap();
@@ -187,6 +188,7 @@ fn a_git_subdir_plugins_skills_resolve_through_the_effective_root() {
             scope: &fx.scope(),
             mode: LinkMode::Symlink,
             force: false,
+            source: None,
         },
     )
     .unwrap();

@@ -96,6 +96,10 @@ pub struct EnableRequest<'a> {
     pub scope: &'a Scope,
     pub mode: LinkMode,
     pub force: bool,
+    /// Where the skill actually lives. `None` means the conventional
+    /// `<plugin_root>/skills/<skill>`; `Some` (the `--path` CLI mode) projects
+    /// from an arbitrary directory instead.
+    pub source: Option<&'a Path>,
 }
 
 /// Result of a successful [`enable`] call.
@@ -177,7 +181,10 @@ pub struct StatusReport {
 /// the same request is a no-op success, not an error.
 pub fn enable(state: &State, request: EnableRequest<'_>) -> Result<EnableOutcome> {
     let link_path = skill_link_path(request.target, request.scope, request.skill)?;
-    let points_to = skill_source_path(request.plugin_root, request.skill);
+    let points_to = match request.source {
+        Some(source) => source.to_path_buf(),
+        None => skill_source_path(request.plugin_root, request.skill),
+    };
     ensure_parent_dir(&link_path)?;
 
     let Some(meta) = read_occupant(&link_path)? else {

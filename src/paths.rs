@@ -161,6 +161,8 @@ pub fn default_targets() -> Vec<AgentTarget> {
         ("gemini", ".gemini"),
         ("cursor", ".cursor"),
         ("opencode", ".opencode"),
+        ("omp", ".omp/agent"),
+        ("pi", ".pi/agent"),
     ]
     .iter()
     .map(|(id, dir)| AgentTarget::new(*id, *dir))
@@ -237,6 +239,8 @@ mod tests {
         let targets = default_targets();
 
         assert!(find_target(&targets, "claude").is_some());
+        assert!(find_target(&targets, "omp").is_some());
+        assert!(find_target(&targets, "pi").is_some());
         assert!(find_target(&targets, "nonexistent").is_none());
     }
 }

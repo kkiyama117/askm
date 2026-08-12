@@ -38,6 +38,7 @@ pub fn run(cli: Cli) -> Result<i32> {
         Command::Enable {
             spec,
             all,
+            path,
             targets,
             user,
             project,
@@ -46,8 +47,9 @@ pub fn run(cli: Cli) -> Result<i32> {
         } => skills::enable_cmd(
             &mut ctx,
             skills::EnableArgs {
-                spec,
+                spec: spec.unwrap_or_default(),
                 all,
+                path,
                 targets,
                 user,
                 project,

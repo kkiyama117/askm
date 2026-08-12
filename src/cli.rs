@@ -101,11 +101,19 @@ pub enum Command {
         /// `<skill>`, or `<skill>@<plugin>@<marketplace>` to disambiguate a
         /// skill name installed by more than one plugin. With `--all`, this
         /// instead names the whole plugin as `<plugin>@<marketplace>`.
-        spec: String,
+        /// Omitted only with `--all --path`, which enables every skill in the
+        /// directory instead.
+        spec: Option<String>,
         /// Enable every skill the named plugin has. Changes `spec`'s
         /// grammar — see above.
         #[arg(long)]
         all: bool,
+        /// Project from an arbitrary skills directory instead of an installed
+        /// plugin: `<dir>/<skill>` is linked directly, and with `--all` every
+        /// immediate child of `<dir>` containing a `SKILL.md` is enabled.
+        /// The link is recorded as plugin `path@<dir>`.
+        #[arg(long, value_name = "DIR")]
+        path: Option<PathBuf>,
         /// Comma-separated agent target ids (e.g. `agents,claude`). Defaults
         /// to the config's default target list.
         #[arg(long = "target", value_delimiter = ',', value_name = "IDS")]

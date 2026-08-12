@@ -80,6 +80,8 @@ askm update [<plugin>@<marketplace>]             # re-install from the cached li
 askm list [--installed] [--enabled]
 
 askm enable <skill> [--target ids] [--user|--project] [--all] [--copy] [--force]
+askm enable <skill> --path <dir> [--target ids] [--user|--project] [--copy] [--force]
+askm enable --all --path <dir> [--target ids] [--user|--project] [--copy] [--force]
 askm disable <skill> [--target ids] [--user|--project]
 askm status
 askm doctor
@@ -102,6 +104,13 @@ defaults to the config's target list (`agents` out of the box, since that's
 the cross-client convention every compliant agent scans). `--project` resolves
 the project root by walking up from the current directory to the nearest
 `.git`, falling back to the current directory itself.
+
+`--path <dir>` projects a skill from an arbitrary directory instead of an
+installed plugin: `<dir>/<skill>` is linked directly, and with `--all` every
+immediate child of `<dir>` containing a `SKILL.md` is enabled. The link is
+recorded as plugin `path@<dir>`, so `disable` still proves ownership. This is
+how skills that live outside any marketplace (e.g. `~/.omp/agent/skills` for
+the `omp` target) are brought under `askm`'s management.
 
 ## The safety rule
 

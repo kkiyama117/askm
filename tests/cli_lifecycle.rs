@@ -4,6 +4,7 @@
 mod common;
 
 use common::{install_demo_plugin, run, Fixture};
+use std::fs;
 
 #[test]
 fn install_then_list_installed_shows_the_plugin() {
@@ -113,4 +114,112 @@ fn search_list_and_status_json_output_all_parse_as_json() {
             "{args:?} should produce a JSON array or object"
         );
     }
+}
+
+#[test]
+fn enable_with_path_projects_a_skill_from_an_arbitrary_directory() {
+    let fx = Fixture::new();
+    let src = fx.project_dir.path().join("skills-src");
+    let skill_dir = src.join("pi-share");
+    fs::create_dir_all(&skill_dir).unwrap();
+    fs::write(
+        skill_dir.join("SKILL.md"),
+        "---\nname: pi-share\ndescription: A test skill.\n---\n\nBody.\n",
+    )
+    .unwrap();
+
+    let mut enable_cmd = fx.cmd(&[
+        "enable",
+        "pi-share",
+        "--path",
+        src.to_str().unwrap(),
+        "--project",
+    ]);
+    let enable = run(&mut enable_cmd);
+    assert!(enable.status.success(), "stderr: {}", enable.stderr);
+
+    let link_path = fx.project_dir.path().join(".agents/skills/pi-share");
+    assert!(
+        link_path.join("SKILL.md").is_file(),
+        "the link should resolve to the source SKILL.md"
+    );
+
+    let mut status_cmd = fx.cmd(&["status"]);
+    let status = run(&mut status_cmd);
+    assert!(status.status.success(), "stderr: {}", status.stderr);
+    assert!(
+        status.stdout.contains("pi-share") && status.stdout.contains("managed"),
+        "stdout: {}",
+        status.stdout
+    );
+
+    let mut disable_cmd = fx.cmd(&["disable", "pi-share", "--project"]);
+    let disable = run(&mut disable_cmd);
+    assert!(disable.status.success(), "stderr: {}", disable.stderr);
+    assert!(!link_path.exists(), "the link should be gone after disable");
+}
+
+#[test]
+fn enable_with_path_and_all_projects_every_skill_in_the_directory() {
+    let fx = Fixture::new();
+    let src = fx.project_dir.path().join("skills-src");
+    for skill in ["alpha", "beta"] {
+        let skill_dir = src.join(skill);
+        fs::create_dir_all(&skill_dir).unwrap();
+        fs::write(
+            skill_dir.join("SKILL.md"),
+            format!("---\nname: {skill}\ndescription: A test skill.\n---\n\nBody.\n"),
+        )
+        .unwrap();
+    }
+    // A directory without a SKILL.md must be ignored by --all.
+    fs::create_dir_all(src.join("not-a-skill")).unwrap();
+
+    let mut enable_cmd = fx.cmd(&[
+        "enable",
+        "--all",
+        "--path",
+        src.to_str().unwrap(),
+        "--project",
+    ]);
+    let enable = run(&mut enable_cmd);
+    assert!(enable.status.success(), "stderr: {}", enable.stderr);
+
+    for skill in ["alpha", "beta"] {
+        let link_path = fx.project_dir.path().join(".agents/skills").join(skill);
+        assert!(
+            link_path.join("SKILL.md").is_file(),
+            "{skill} should be enabled"
+        );
+    }
+    assert!(
+        !fx.project_dir
+            .path()
+            .join(".agents/skills/not-a-skill")
+            .exists(),
+        "a directory without SKILL.md must not be enabled"
+    );
+}
+
+#[test]
+fn enable_with_path_refuses_a_missing_skill() {
+    let fx = Fixture::new();
+    let src = fx.project_dir.path().join("skills-src");
+    fs::create_dir_all(&src).unwrap();
+
+    let mut enable_cmd = fx.cmd(&[
+        "enable",
+        "missing",
+        "--path",
+        src.to_str().unwrap(),
+        "--project",
+    ]);
+    let enable = run(&mut enable_cmd);
+
+    assert!(!enable.status.success());
+    assert!(
+        enable.stderr.contains("no skill named"),
+        "stderr: {}",
+        enable.stderr
+    );
 }

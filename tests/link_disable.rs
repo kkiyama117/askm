@@ -44,6 +44,7 @@ fn enable_skill(
             scope,
             mode,
             force: false,
+            source: None,
         },
     )
     .unwrap()
